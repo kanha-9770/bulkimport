@@ -1,0 +1,379 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum LanguageCode {
+  en
+  fr
+  hi
+  ta
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  name         String
+  password     String
+  avatar       String?
+  otpToken     String?
+  otpExpires   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  role         Role       @default(user)
+  refreshToken String?
+  isApproved   Boolean    @default(false)
+  auditLogs    AuditLog[] @relation("UserAuditLogs")
+}
+
+model Category {
+  id                      Int                   @id @default(autoincrement())
+  name_en                 String                @unique
+  category_icon           String?
+  category_image          String?
+  category_Alt_en         String?
+  categoryLink_en         String?
+  specification_image     String?
+  specification_image_alt String?
+  products                Product[]             @relation("CategoryProducts")
+  translations            CategoryTranslation[] @relation("CategoryTranslations")
+}
+
+model CategoryTranslation {
+  id           Int                  @id @default(autoincrement())
+  language     LanguageCode
+  name         String
+  iconAlt      String?
+  categoryLink String?
+  description  String?              @db.Text
+  categoryId   Int
+  category     Category             @relation("CategoryTranslations", fields: [categoryId], references: [id])
+  products     ProductTranslation[] @relation("CategoryTranslationProducts")
+
+  @@unique([categoryId, language])
+}
+
+model Product {
+  id                      Int                      @id @default(autoincrement())
+  model_name_en           String                   @unique
+  product_name            String?
+  categories              Category[]               @relation("CategoryProducts")
+  productImage            String?
+  productImage_Alt        String?
+  status_en               String?                  @default("New")
+  stars                   Int?                     @default(4)
+  reviews                 Int?                     @default(0)
+  productDescription_en   String?                  @db.Text
+  model_description       String?                  @db.Text
+  introduction            String?                  @db.Text
+  modelSpecification      modelSpecification[]     @relation("modelSpecification")
+  advantages              Advantage[]              @relation("ProductAdvantages")
+  specifications          Specification[]          @relation("ProductSpecifications")
+  applicationData         ApplicationData[]        @relation("ProductApplicationData")
+  technicalSpecifications TechnicalSpecification[] @relation("ProductTechnicalSpecifications")
+  relatedProducts         RelatedProduct[]         @relation("ProductRelatedProducts")
+  processSteps            ProcessStep[]            @relation("ProductProcessSteps")
+  translations            ProductTranslation[]     @relation("ProductTranslations")
+}
+
+model ProductTranslation {
+  id                      Int                      @id @default(autoincrement())
+  language                LanguageCode
+  name                    String
+  imageAlt                String?
+  status                  String?
+  productDescription      String?                  @db.Text
+  model_description       String?                  @db.Text
+  introduction            String?                  @db.Text
+  productId               Int
+  product                 Product                  @relation("ProductTranslations", fields: [productId], references: [id])
+  categories              CategoryTranslation[]    @relation("CategoryTranslationProducts")
+  advantages              Advantage[]              @relation("ProductTranslationAdvantages")
+  specifications          Specification[]          @relation("ProductTranslationSpecifications")
+  applicationData         ApplicationData[]        @relation("ProductTranslationApplicationData")
+  technicalSpecifications TechnicalSpecification[] @relation("ProductTranslationTechnicalSpecifications")
+  relatedProducts         RelatedProduct[]         @relation("ProductTranslationRelatedProducts")
+  processSteps            ProcessStep[]            @relation("ProductTranslationProcessSteps")
+  modelSpecifications     modelSpecification[]     @relation("ProductTranslationModelSpecifications")
+
+  @@unique([productId, language])
+}
+
+model modelSpecification {
+  id                  Int                             @id @default(autoincrement())
+  title_en            String                          @unique
+  products            Product[]                       @relation("modelSpecification")
+  translations        modelSpecificationTranslation[] @relation("modelSpecificationTranslation")
+  productTranslations ProductTranslation[]            @relation("ProductTranslationModelSpecifications")
+}
+
+model modelSpecificationTranslation {
+  id          Int                @id @default(autoincrement())
+  language    LanguageCode
+  title       String
+  modelspecId Int
+  modelSpec   modelSpecification @relation("modelSpecificationTranslation", fields: [modelspecId], references: [id])
+
+  @@unique([modelspecId, language])
+}
+
+model Advantage {
+  id                  Int                    @id @default(autoincrement())
+  heading_en          String                 @default("Advantages")
+  title_en            String                 @unique
+  products            Product[]              @relation("ProductAdvantages")
+  translations        AdvantageTranslation[] @relation("AdvantageTranslations")
+  productTranslations ProductTranslation[]   @relation("ProductTranslationAdvantages")
+}
+
+model AdvantageTranslation {
+  id          Int          @id @default(autoincrement())
+  language    LanguageCode
+  heading     String       @default("Advantages")
+  title       String
+  advantageId Int
+  advantage   Advantage    @relation("AdvantageTranslations", fields: [advantageId], references: [id])
+
+  @@unique([advantageId, language])
+}
+
+model Specification {
+  id                    Int                        @id @default(autoincrement())
+  categoryId            Int?
+  productId             Int?
+  speed_en              String?
+  paperSpecification_en String?                    @db.Text
+  sizeRange_en          String?
+  product               Product?                   @relation("ProductSpecifications", fields: [productId], references: [id])
+  translations          SpecificationTranslation[] @relation("SpecificationTranslations")
+  productTranslations   ProductTranslation[]       @relation("ProductTranslationSpecifications")
+}
+
+model SpecificationTranslation {
+  id                 Int           @id @default(autoincrement())
+  language           LanguageCode
+  speed              String?
+  paperSpecification String?       @db.Text
+  sizeRange          String?
+  specificationId    Int
+  specification      Specification @relation("SpecificationTranslations", fields: [specificationId], references: [id])
+
+  @@unique([specificationId, language])
+}
+
+model ApplicationData {
+  id                  Int                          @id @default(autoincrement())
+  productId           Int
+  product             Product                      @relation("ProductApplicationData", fields: [productId], references: [id])
+  title_en            String
+  src                 String?
+  src_alt_en          String?
+  translations        ApplicationDataTranslation[] @relation("ApplicationDataTranslations")
+  productTranslations ProductTranslation[]         @relation("ProductTranslationApplicationData")
+}
+
+model ApplicationDataTranslation {
+  id                Int             @id @default(autoincrement())
+  language          LanguageCode
+  title             String
+  src_alt           String?
+  applicationDataId Int
+  applicationData   ApplicationData @relation("ApplicationDataTranslations", fields: [applicationDataId], references: [id])
+
+  @@unique([applicationDataId, language])
+}
+
+model TechnicalSpecification {
+  id                  Int                                 @id @default(autoincrement())
+  productId           Int
+  product             Product                             @relation("ProductTechnicalSpecifications", fields: [productId], references: [id])
+  feature_en          String
+  spec_en             String
+  translations        TechnicalSpecificationTranslation[] @relation("TechnicalSpecificationTranslations")
+  productTranslations ProductTranslation[]                @relation("ProductTranslationTechnicalSpecifications")
+}
+
+model TechnicalSpecificationTranslation {
+  id                       Int                    @id @default(autoincrement())
+  language                 LanguageCode
+  feature                  String
+  spec                     String
+  technicalSpecificationId Int
+  technicalSpecification   TechnicalSpecification @relation("TechnicalSpecificationTranslations", fields: [technicalSpecificationId], references: [id])
+
+  @@unique([technicalSpecificationId, language])
+}
+
+enum MachineType {
+  Mechanical
+  Servo
+}
+
+model RelatedProduct {
+  id                  Int                         @id @default(autoincrement())
+  productId           Int
+  product             Product                     @relation("ProductRelatedProducts", fields: [productId], references: [id])
+  title_en            String
+  description_en      String?                     @db.Text
+  image               String?
+  imageAlt_en         String?
+  category_icon       String?
+  category_Alt_en     String?
+  machineType         MachineType                 @default(Mechanical)
+  translations        RelatedProductTranslation[] @relation("RelatedProductTranslations")
+  productTranslations ProductTranslation[]        @relation("ProductTranslationRelatedProducts")
+}
+
+model RelatedProductTranslation {
+  id               Int            @id @default(autoincrement())
+  language         LanguageCode
+  title            String
+  description      String?        @db.Text
+  imageAlt         String?
+  category_Alt     String?
+  machineType      MachineType
+  relatedProductId Int
+  relatedProduct   RelatedProduct @relation("RelatedProductTranslations", fields: [relatedProductId], references: [id])
+
+  @@unique([relatedProductId, language])
+}
+
+model ProcessStep {
+  id                  Int                      @id @default(autoincrement())
+  productId           Int
+  product             Product                  @relation("ProductProcessSteps", fields: [productId], references: [id])
+  title_en            String
+  description_en      String                   @db.Text
+  process_image       String?
+  process_image_alt   String?
+  translations        ProcessStepTranslation[] @relation("ProcessStepTranslations")
+  productTranslations ProductTranslation[]     @relation("ProductTranslationProcessSteps")
+}
+
+model ProcessStepTranslation {
+  id            Int          @id @default(autoincrement())
+  language      LanguageCode
+  title         String
+  description   String       @db.Text
+  processStepId Int
+  processStep   ProcessStep  @relation("ProcessStepTranslations", fields: [processStepId], references: [id])
+
+  @@unique([processStepId, language])
+}
+
+model CTA {
+  id             Int              @id @default(autoincrement())
+  text_en        String           @unique
+  description_en String?          @db.Text
+  translations   CTATranslation[] @relation("CTATranslations")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model CTATranslation {
+  id          Int          @id @default(autoincrement())
+  language    LanguageCode
+  text        String
+  description String?      @db.Text
+  ctaId       Int
+  cta         CTA          @relation("CTATranslations", fields: [ctaId], references: [id])
+
+  @@unique([ctaId, language])
+}
+
+model TranslationTask {
+  id                  Int          @id @default(autoincrement())
+  entityType          String
+  entityId            Int
+  texts               Json
+  language            LanguageCode
+  status              String
+  attempts            Int          @default(0)
+  lastError           String?
+  processingStartedAt DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  apiKeyId            Int? // New: Reference to ApiKey
+  apiUrl              String? // New: Custom API URL for this task
+  apiKey              ApiKey?      @relation("ApiKeyToTranslationTask", fields: [apiKeyId], references: [id])
+
+  @@unique([entityType, entityId, language])
+}
+
+model ContactSubmission {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  fullName    String
+  email       String
+  phone       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ApiKey {
+  id               Int               @id @default(autoincrement())
+  keyValue         String            @unique
+  status           String            @default("active")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  lastUsedAt       DateTime?
+  rateLimitPerMin  Int?
+  rateLimitCount   Int               @default(0)
+  rateLimitReset   DateTime?
+  notes            String?
+  usageLogs        ApiKeyUsage[]
+  auditLogs        AuditLog[]        @relation("ApiKeyAuditLogs")
+  translationTasks TranslationTask[] @relation("ApiKeyToTranslationTask")
+
+  @@index([status, lastUsedAt])
+}
+
+model ApiKeyUsage {
+  id           Int      @id @default(autoincrement())
+  apiKeyId     Int
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id])
+  requestAt    DateTime @default(now())
+  statusCode   Int
+  durationMs   Int
+  endpoint     String
+  errorMessage String?
+
+  @@index([apiKeyId, requestAt])
+}
+
+model ApiConfig {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  value       String
+  description String?
+  updatedAt   DateTime   @updatedAt
+  auditLogs   AuditLog[] @relation("ApiConfigAuditLogs")
+}
+
+model AuditLog {
+  id          Int        @id @default(autoincrement())
+  userId      Int?
+  user        User?      @relation("UserAuditLogs", fields: [userId], references: [id])
+  apiKeyId    Int?
+  apiKey      ApiKey?    @relation("ApiKeyAuditLogs", fields: [apiKeyId], references: [id])
+  apiConfigId Int?
+  apiConfig   ApiConfig? @relation("ApiConfigAuditLogs", fields: [apiConfigId], references: [id])
+  action      String
+  details     String?    @db.Text
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([apiConfigId, createdAt])
+}
